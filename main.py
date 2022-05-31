@@ -19,7 +19,7 @@ def func_time(func):
 
 
 @func_time
-def main(package_name):
+def monkeytest(package_name):
     logger = setup_logger(level=logging.DEBUG)
 
     # adbutils.adb.connect('192.168.2.151')
@@ -99,4 +99,4 @@ def main(package_name):
 
 if __name__ == '__main__':
 
-    main(package_name)
+    monkeytest(package_name)
