@@ -4,7 +4,7 @@ import time
 import subprocess
 import os
 import functools
-
+import sys
 
 def func_time(func):
     @functools.wraps(func)
@@ -18,15 +18,15 @@ def func_time(func):
 
 
 @func_time
-def main(package_name):
+def main(package_name,folder_path):
     logger = setup_logger(level=logging.DEBUG)
 
     # adbutils.adb.connect('192.168.2.151')
     d = adbutils.adb.device()
     print(d)
 
-    folder_path = 'D:\\ALOG\\'
-    test_count = 5000
+    # folder_path = 'D:\\ALOG\\'
+    test_count = 50
 
     d.app_stop(package_name)
 
@@ -35,7 +35,10 @@ def main(package_name):
     monkey_log_file_path = os.path.join(folder_path, monkey_log_file_name)
 
     monkey_log_file_path_flg = '> ' + monkey_log_file_path
-    sc = d.screenrecord("/sdcard/log_ScreenRecord.mp4")
+    current_time = time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time()))
+    screen_record_file_name = 'log_ScreenRecord_' + current_time + '.mp4'
+    screen_record_file_path = os.path.join(folder_path, 'ScreenRecord', screen_record_file_name)
+    d.start_recording(screen_record_file_path)
     record_start = time.time()
     logger.info('ScreenRecord start !')
 
@@ -53,9 +56,12 @@ def main(package_name):
                 logger.info('running...')
                 if int((time.time()-record_start) > 120):
                     print((time.time()-record_start))
-                    sc.stop()
+                    d.stop_recording()
                     record_start = time.time()
-                    sc = d.screenrecord("/sdcard/log_ScreenRecord.mp4")
+                    current_time = time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time()))
+                    screen_record_file_name = 'log_ScreenRecord_' + current_time + '.mp4'
+                    screen_record_file_path = os.path.join(folder_path, 'ScreenRecord', screen_record_file_name)
+                    d.start_recording(screen_record_file_path)
                     time.sleep(3)
 
             else:
@@ -66,28 +72,30 @@ def main(package_name):
         logger.info('test end !')
 
         time.sleep(3)
-        current_time = time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time()))
-        screen_record_file_name = 'log_ScreenRecord_' + current_time + '.mp4'
-        screen_record_file_path = os.path.join(folder_path, 'ScreenRecord', screen_record_file_name)
-        sc.stop_and_pull(screen_record_file_path)
+        # current_time = time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time()))
+        # screen_record_file_name = 'log_ScreenRecord_' + current_time + '.mp4'
+        # screen_record_file_path = os.path.join(folder_path, 'ScreenRecord', screen_record_file_name)
+        if d.is_recording():
+            d.stop_recording()
+        # d.sync.pull("/sdcard/log_ScreenRecord.mp4", screen_record_file_path)
         logger.info(screen_record_file_path)
 
         log_file_name = 'log_' + current_time + '.log'
         log_file_path = os.path.join(folder_path, log_file_name)
-        d.sync.pull('/sdcard/log.log', log_file_path)
+        # d.sync.pull('/sdcard/log.log', log_file_path)
         
     except ConnectionAbortedError:
         print('test error!!')
         logger.debug('设备连接已断开！')
         file = '/sdcard/log.log'
-        cmd = ' '.join(['adb', 'pull', file, 'D:/ALOG/'])
+        cmd = ' '.join(['adb', 'pull', file, folder_path])
         with os.popen(cmd) as p:
             r = p.read()
             if r:
                 logger.debug(r)
 
-        file = "/sdcard/log_ScreenRecord.mp4"
-        cmd = ' '.join(['adb', 'pull', file, 'D:/ALOG/log_ScreenRecord.mp4'])
+        # file = "/sdcard/log_ScreenRecord.mp4"
+        # cmd = ' '.join(['adb', 'pull', file, os.path.join(folder_path,'log_ScreenRecord.mp4')])
         with os.popen(cmd) as p:
             r = p.read()
             if r:
@@ -97,5 +105,6 @@ def main(package_name):
 
 
 if __name__ == '__main__':
-
-    main(package_name)
+    # argv = sys.argv
+    argv = ["com.jbt.mds.scan.phone","D:\\ALOG"]
+    main(argv[0],argv[1])
